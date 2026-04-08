@@ -39,15 +39,16 @@ class EInkCard:
             card.refresh()
     """
 
-    def __init__(self, tag: Any = None) -> None:
+    _DELAY_S = 0.250
+
+    def __init__(self, connection: Any = None) -> None:
         """Initialize EInkCard.
 
         Args:
-            tag: An nfcpy Type4Tag object. If None, call connect() to
-                auto-detect a reader and wait for a card.
+            connection: A pyscard CardConnection object. If None, call connect()
+                to auto-detect a reader and wait for a card.
         """
-        self._tag = tag
-        self._clf: Any = None
+        self._connection = connection
         self._device_info: DeviceInfo | None = None
 
     @property
@@ -62,38 +63,59 @@ class EInkCard:
             return ""
         return self._device_info.serial_number
 
-    def connect(self, reader: str = "usb") -> None:
+    def connect(self, reader: str = "PaSoRi") -> None:
         """Connect to an NFC reader, wait for a card, authenticate, and read device info.
 
         Blocks until a card is detected on the reader.
 
         Args:
-            reader: nfcpy device path (default: 'usb' for USB readers).
+            reader: Name substring to match against available PC/SC readers
+                (default: 'PaSoRi'). The first reader whose name contains this
+                string is used.
 
         Raises:
-            CommunicationError: If no reader is found or connection fails.
+            CommunicationError: If no matching reader is found or connection fails.
         """
         try:
-            import nfc
+            from smartcard.System import readers as get_readers
         except ImportError as e:
             raise CommunicationError(
-                "nfcpy is required: pip install nfcpy"
+                "pyscard is required: pip install pyscard"
             ) from e
 
         try:
-            self._clf = nfc.ContactlessFrontend(reader)
-        except IOError as e:
-            raise CommunicationError(f"Cannot open NFC reader '{reader}': {e}") from e
+            available = get_readers()
+        except Exception as e:
+            raise CommunicationError(f"Cannot access PC/SC readers: {e}") from e
 
-        def on_connect(tag: Any) -> bool:
-            self._tag = tag
-            return False  # Return False so connect() returns immediately with the tag
+        if not available:
+            raise CommunicationError("No NFC readers found")
 
-        tag = self._clf.connect(rdwr={"on-connect": on_connect})
-        if tag is None or self._tag is None:
-            raise CommunicationError("No card detected")
+        matches = [r for r in available if reader in str(r)]
+        if not matches:
+            names = ", ".join(f'"{r}"' for r in available)
+            raise CommunicationError(
+                f"No reader matching '{reader}' found. Available: {names}"
+            )
+        selected = matches[0]
 
-        self.authenticate()
+        while True:
+            try:
+                connection = selected.createConnection()
+                connection.connect()
+            except Exception:
+                time.sleep(EInkCard._DELAY_S)
+                continue
+            self._connection = connection
+            try:
+                self.authenticate()
+                break
+            except AuthenticationError as e:
+                self._connection = None
+                connection.disconnect()
+                time.sleep(EInkCard._DELAY_S)
+                continue
+
         self._read_device_info()
 
     def _read_device_info(self) -> None:
@@ -104,13 +126,15 @@ class EInkCard:
 
     def close(self) -> None:
         """Close the NFC connection."""
-        if self._clf is not None:
-            self._clf.close()
-            self._clf = None
-        self._tag = None
+        if self._connection is not None:
+            try:
+                self._connection.disconnect()
+            except Exception:
+                pass
+            self._connection = None
 
     def __enter__(self) -> EInkCard:
-        if self._tag is None:
+        if self._connection is None:
             self.connect()
         return self
 
@@ -132,29 +156,25 @@ class EInkCard:
         mrl: int = 0,
         check_status: bool = True,
     ) -> bytes:
-        """Send an APDU command via nfcpy."""
-        if self._tag is None:
+        """Send an APDU command via pyscard."""
+        if self._connection is None:
             raise CommunicationError("Not connected to a card")
 
+        apdu = [cla, ins, p1, p2]
+        if data:
+            apdu += [len(data)] + list(data)
+        if mrl:
+            apdu += [mrl & 0xFF]
+
         try:
-            response = self._tag.send_apdu(
-                cla, ins, p1, p2, data, mrl, check_status
-            )
-            return bytes(response) if response else b""
+            response, sw1, sw2 = self._connection.transmit(apdu)
         except Exception as e:
-            err_name = type(e).__name__
-            if "TimeoutError" in err_name or "timeout" in str(e).lower():
-                raise CommunicationError(
-                    "Card communication timed out (card may have been removed)"
-                ) from e
-            if "Type4TagCommandError" in err_name:
-                errno = getattr(e, "errno", 0)
-                if errno == 0:
-                    raise CommunicationError(
-                        "Card communication lost"
-                    ) from e
-                raise StatusWordError(errno >> 8, errno & 0xFF) from e
             raise CommunicationError(f"APDU command failed: {e}") from e
+
+        if check_status and (sw1, sw2) != (0x90, 0x00):
+            raise StatusWordError(sw1, sw2)
+
+        return bytes(response)
 
     def authenticate(self) -> None:
         """Authenticate with the card.

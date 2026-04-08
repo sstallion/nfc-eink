@@ -8,7 +8,7 @@ NFC e-ink カードディスプレイ用の Python ライブラリです。
 - 400x300 / 296x128
 - 4色 (黒/白/黄/赤) / 2色 (黒/白)
 
-このライブラリは [@niw氏の gist](https://gist.github.com/niw/3885b22d502bb1e145984d41568f202d#file-ezsignepaperprotocol-md) で公開されているプロトコル仕様を [nfcpy](https://github.com/nfcpy/nfcpy) で実装したものです。本プロジェクトは独自に開発されたものであり、元の仕様の作者とは無関係です。
+このライブラリは [@niw氏の gist](https://gist.github.com/niw/3885b22d502bb1e145984d41568f202d#file-ezsignepaperprotocol-md) で公開されているプロトコル仕様を [pyscard](https://github.com/LudovicRousseau/pySCard) で実装したものです。本プロジェクトは独自に開発されたものであり、元の仕様の作者とは無関係です。
 
 > **免責事項:** このライブラリは個人的な利用目的で作成したものであり、品質の保証はありません。利用は自己責任でお願いします。対象デバイスへの損害について作者は一切責任を負いません。
 
@@ -17,7 +17,7 @@ NFC e-ink カードディスプレイ用の Python ライブラリです。
 ## インストール
 
 ```bash
-pip install "nfc-eink[cli] @ git+https://github.com/alt-core/nfc-eink.git"
+pip install "nfc-eink[cli] @ git+https://github.com/sstallion/nfc-eink.git"
 ```
 
 ## クイックスタート
@@ -64,8 +64,8 @@ nfc-eink diag stripe
 ## 動作要件
 
 - Python 3.9+
-- USB NFCリーダー (Sony RC-S380 PaSoRi で動作確認)
-- [nfcpy](https://github.com/nfcpy/nfcpy) - NFC通信
+- PC/SC対応USBNFCリーダー (Sony RC-S300 で動作確認)
+- [pyscard](https://github.com/LudovicRousseau/pySCard) - PC/SC通信
 - [lzallright](https://github.com/vlaci/lzallright) - LZO圧縮
 
 ## 対応デバイス

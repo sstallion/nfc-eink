@@ -2,7 +2,7 @@
 
 This module handles the ISO7816 APDU protocol without any NFC I/O.
 All functions return tuples of (cla, ins, p1, p2, data) suitable for
-passing to nfcpy's tag.send_apdu().
+passing to pyscard's CardConnection.transmit().
 """
 
 from __future__ import annotations

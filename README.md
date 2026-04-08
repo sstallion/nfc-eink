@@ -8,7 +8,7 @@ Supports 4 device variants (2 resolutions x 2 color modes):
 - 400x300 / 296x128
 - 4-color (black/white/yellow/red) / 2-color (black/white)
 
-This library is an [nfcpy](https://github.com/nfcpy/nfcpy)-based implementation of the protocol described in [@niw's gist](https://gist.github.com/niw/3885b22d502bb1e145984d41568f202d#file-ezsignepaperprotocol-md). This project is independently developed and is not affiliated with or endorsed by the original protocol author.
+This library is a [pyscard](https://github.com/LudovicRousseau/pySCard)-based implementation of the protocol described in [@niw's gist](https://gist.github.com/niw/3885b22d502bb1e145984d41568f202d#file-ezsignepaperprotocol-md). This project is independently developed and is not affiliated with or endorsed by the original protocol author.
 
 > **Disclaimer:** This library was created for personal use. No warranty is provided. Use at your own risk — the author is not responsible for any damage to your devices.
 
@@ -17,7 +17,7 @@ This library is an [nfcpy](https://github.com/nfcpy/nfcpy)-based implementation 
 ## Installation
 
 ```bash
-pip install "nfc-eink[cli] @ git+https://github.com/alt-core/nfc-eink.git"
+pip install "nfc-eink[cli] @ git+https://github.com/sstallion/nfc-eink.git"
 ```
 
 ## Quick Start
@@ -64,8 +64,8 @@ nfc-eink diag stripe
 ## Requirements
 
 - Python 3.9+
-- USB NFC reader (tested with Sony RC-S380 PaSoRi)
-- [nfcpy](https://github.com/nfcpy/nfcpy) for NFC communication
+- USB NFC reader with PC/SC support (tested with Sony RC-S300 PaSoRi)
+- [pyscard](https://github.com/LudovicRousseau/pySCard) for PC/SC communication
 - [lzallright](https://github.com/vlaci/lzallright) for LZO image compression
 
 ## Supported Devices
